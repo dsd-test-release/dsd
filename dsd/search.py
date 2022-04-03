@@ -1110,7 +1110,10 @@ def create_report(design: dc.Design, constraints: Iterable[Constraint]) -> str:
     from a design.json file writte as part of a call to :meth:`search_for_dna_sequences`.
 
     The report is the same format as written to the reports generated when calling
-    :meth:`search_for_dna_sequences`
+    :meth:`search_for_dna_sequences`.
+    Unfortunately this means it suffers the limitation that it currently only prints a summary
+    for *violations* of constraints;
+    see https://github.com/UC-Davis-molecular-computing/dsd/issues/134
 
     :param design:
         the :any:`constraints.Design`, with sequences assigned to all :any:`Domain`'s
@@ -1615,6 +1618,9 @@ def summary_of_constraint(constraint: Constraint, report_only_violations: bool,
 
         violations_nonfixed = violation_set.violations_nonfixed[constraint]
         violations_fixed = violation_set.violations_fixed[constraint]
+
+        some_fixed_violations = len(violations_fixed) > 0
+
         for violations, header_name in [(violations_nonfixed, f"unfixed {part_type_name}s"),
                                         (violations_fixed, f"fixed {part_type_name}s")]:
             if len(violations) == 0:
@@ -1633,7 +1639,10 @@ def summary_of_constraint(constraint: Constraint, report_only_violations: bool,
 
             lines = (line for line, _ in lines_and_scores)
             content = '\n'.join(lines)
-            summary = _small_header(header_name, "=") + f'\n{content}\n'
+
+            # only put header to distinguish fixed from unfixed violations if there are some fixed
+            full_header = _small_header(header_name, "=") if some_fixed_violations else ''
+            summary = full_header + f'\n{content}\n'
             summaries.append(summary)
 
         content = ''.join(summaries)
@@ -1669,7 +1678,9 @@ def add_header_to_content_of_summary(report: ConstraintReport, violation_set: dc
 * violations: {report.num_violations}
 * score of violations: {score:.2f}{"" if summary_score_unfixed is None else summary_score_unfixed}
 {indented_content}''' + ('\nThe option "report_only_violations" is currently being ignored '
-                         'when set to False\n' if not report_only_violations else '')
+                         'when set to False\n'
+                         'see https://github.com/UC-Davis-molecular-computing/dsd/issues/134\n'
+                                       if not report_only_violations else '')
     return summary
 
 
